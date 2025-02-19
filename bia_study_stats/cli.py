@@ -593,8 +593,8 @@ def analyze_bfftrees(
     """
     import lzma
     from pathlib import Path
-    from .bettertree_pb2 import RadixTreeNode as ProtoNode
-    from .tree import RadixTreeNode
+    from bfftree.bettertree_pb2 import RadixTreeNode as ProtoNode
+    from bfftree.tree import RadixTreeNode
     
     # Find all .pb.xz files
     tree_files = list(directory.glob("**/*.pb.xz"))
