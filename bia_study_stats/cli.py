@@ -11,6 +11,7 @@ from rich.console import Console
 
 from .s3_size_calculator import Settings, S3SizeCalculator  # Import from your existing module
 from .models import BIAStudyStats
+from .get_all_bia_accessions import get_all_bia_accessions
 
 app = typer.Typer()
 
@@ -720,6 +721,42 @@ def analyze_bfftrees(
         
         console.print("\n")
         console.print(ext_table)
+
+@app.command()
+def generate_all_biostudies_bfftrees(
+    force: bool = typer.Option(False, help="Force regeneration of existing BFFTrees")
+):
+    """
+    Generate BFFTrees for all BioStudies entries from BioImage Archive.
+    Skip entries that already have BFFTrees unless --force is used.
+    """
+    print("[yellow]Fetching all BIA accessions...[/yellow]")
+    studies = get_all_bia_accessions()
+    print(f"[yellow]Found {len(studies)} BIA entries to process[/yellow]")
+    
+    # Process each accession
+    for study in studies:
+        accession_id = study.accession
+        output_path = Path(f"bfftrees/biostudies/xz/{accession_id}.pb.xz")
+        
+        # Skip if file exists and not forcing regeneration
+        if output_path.exists() and not force:
+            print(f"[blue]Skipping {accession_id} - BFFTree already exists at {output_path}[/blue]")
+            continue
+        
+        print(f"[yellow]Processing {accession_id}...[/yellow]")
+        try:
+            # Create output directory if it doesn't exist
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Call with explicit output path to avoid creating it twice
+            bfftree_for_biostudies_entry(
+                accession_id=accession_id,
+                output_path=output_path
+            )
+            print(f"[green]Successfully generated BFFTree for {accession_id}[/green]")
+        except Exception as e:
+            print(f"[red]Error generating BFFTree for {accession_id}: {e}[/red]")
+            continue
 
 if __name__ == "__main__":
     app() 
