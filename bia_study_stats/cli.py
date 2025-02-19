@@ -477,6 +477,39 @@ def plot_cumulative_entries(
     print(f"Plot saved as quarterly_cumulative_entries.png")
 
 @app.command()
+def bfftree_for_empiar_entry(
+    empiar_id: str = typer.Argument(..., help="EMPIAR ID (e.g. EMPIAR-10473)"),
+    output_path: Optional[Path] = typer.Option(
+        None,
+        help="Output path for the BFFTree (defaults to bfftrees/xz/EMPIAR-{id}.pb.xz)",
+    ),
+):
+    """
+    Create a BFFTree from an EMPIAR entry's S3 data and save it as a compressed protobuf file.
+    """
+    # Extract numeric ID from EMPIAR ID
+    if not empiar_id.startswith("EMPIAR-"):
+        print("[red]EMPIAR ID must start with 'EMPIAR-'[/red]")
+        raise typer.Exit(1)
+    numeric_id = empiar_id.split("-")[1]
+    
+    # Set default output path if none provided
+    if output_path is None:
+        output_path = Path(f"bfftrees/xz/{empiar_id}.pb.xz")
+        # Ensure directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Construct S3 prefix for EMPIAR data
+    prefix = f"world_availability/{numeric_id}/data"
+    
+    # Call bfftree_from_s3_prefix with EMPIAR-specific settings
+    bfftree_from_s3_prefix(
+        prefix=prefix,
+        output_path=output_path,
+        bucket="imaging-public"
+    )
+
+@app.command()
 def bfftree_from_s3_prefix(
     prefix: str = typer.Argument(..., help="S3 prefix to process"),
     output_path: Path = typer.Argument(..., help="Output path for the BFFTree (.pb or .pb.xz)"),
