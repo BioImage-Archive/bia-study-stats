@@ -74,7 +74,7 @@ class FileEntry(BaseModel):
     size: int
 
 
-def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str) -> 'RadixTreeNode':
+def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str, strip_prefix: bool = False) -> 'RadixTreeNode':
     """
     Create a RadixTree from an S3 prefix by recursively listing all objects.
     
@@ -82,6 +82,7 @@ def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str) -> 'Rad
         settings: S3Settings instance with configuration
         bucket: The S3 bucket name
         prefix: The prefix to process
+        strip_prefix: If True, remove the prefix from stored paths
         
     Returns:
         RadixTree representation of the S3 prefix contents
@@ -104,8 +105,11 @@ def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str) -> 'Rad
                 # Process objects at current level
                 if 'Contents' in page:
                     for obj in page['Contents']:
+                        path = obj['Key']
+                        if strip_prefix and path.startswith(prefix):
+                            path = path[len(prefix):].lstrip('/')
                         entries.append(FileEntry(
-                            path=obj['Key'],
+                            path=path,
                             size=obj['Size']
                         ))
                 

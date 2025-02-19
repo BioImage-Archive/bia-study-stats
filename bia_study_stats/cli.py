@@ -527,7 +527,7 @@ def bfftree_from_s3_prefix(
     try:
         # Generate the tree
         print(f"[yellow]Generating BFFTree from s3://{bucket}/{prefix}...[/yellow]")
-        tree = s3_prefix_to_bfftree(settings, bucket, prefix)
+        tree = s3_prefix_to_bfftree(settings, bucket, prefix, strip_prefix=True)
         
         # Save as compressed protobuf if output ends with .xz
         if str(output_path).endswith('.xz'):
