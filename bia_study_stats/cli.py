@@ -571,7 +571,7 @@ def generate_all_empiar_bfftrees(
         
         print(f"[yellow]Processing {empiar_id}...[/yellow]")
         try:
-            bfftree_for_empiar_entry(empiar_id)
+            bfftree_for_empiar_entry(empiar_id=str(empiar_id))
             print(f"[green]Successfully generated BFFTree for {empiar_id}[/green]")
         except Exception as e:
             print(f"[red]Error generating BFFTree for {empiar_id}: {e}[/red]")
