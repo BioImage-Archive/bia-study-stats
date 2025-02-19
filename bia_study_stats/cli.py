@@ -495,7 +495,7 @@ def bfftree_for_empiar_entry(
     
     # Set default output path if none provided
     if output_path is None:
-        output_path = Path(f"bfftrees/xz/{empiar_id}.pb.xz")
+        output_path = Path(f"bfftrees/empiar/xz/{empiar_id}.pb.xz")
         # Ensure directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
     
