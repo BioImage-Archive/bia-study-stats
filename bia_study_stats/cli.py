@@ -477,6 +477,45 @@ def plot_cumulative_entries(
     print(f"Plot saved as quarterly_cumulative_entries.png")
 
 @app.command()
+def bfftree_for_biostudies_entry(
+    accession_id: str = typer.Argument(..., help="BioStudies accession ID (e.g. S-BIAD1654)"),
+    output_path: Optional[Path] = typer.Option(
+        None,
+        help="Output path for the BFFTree (defaults to bfftrees/biostudies/xz/{accession_id}.pb.xz)",
+    ),
+):
+    """
+    Create a BFFTree from a BioStudies entry's S3 data and save it as a compressed protobuf file.
+    """
+    from .web_utils import extract_ftp_link
+    
+    # Set default output path if none provided
+    if output_path is None:
+        output_path = Path(f"bfftrees/biostudies/xz/{accession_id}.pb.xz")
+        # Ensure directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Get FTP link for the accession
+        ftp_link = extract_ftp_link(accession_id)
+        
+        # Extract the relevant part of the path and construct S3 prefix
+        # e.g. from ftp://ftp.ebi.ac.uk/biostudies/fire/S-BIAD/654/S-BIAD1654
+        # to S-BIAD/654/S-BIAD1654/Files
+        path_parts = ftp_link.split('/fire/')[-1].split('/')
+        prefix = f"{'/'.join(path_parts)}/Files"
+        
+        # Call bfftree_from_s3_prefix with constructed prefix
+        bfftree_from_s3_prefix(
+            prefix=prefix,
+            output_path=output_path,
+            bucket="biostudies-public"
+        )
+        
+    except ValueError as e:
+        print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(1)
+
 def bfftree_for_empiar_entry(
     empiar_id: str = typer.Argument(..., help="EMPIAR ID (e.g. EMPIAR-10473)"),
     output_path: Optional[Path] = typer.Option(
