@@ -1,7 +1,7 @@
 import json
 import lzma
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import typer
 from rich import print
@@ -541,6 +541,41 @@ def bfftree_from_s3_prefix(
     except Exception as e:
         print(f"[red]Error generating BFFTree: {e}[/red]")
         raise typer.Exit(1)
+
+@app.command()
+def generate_all_empiar_bfftrees(
+    force: bool = typer.Option(False, help="Force regeneration of existing BFFTrees")
+):
+    """
+    Generate BFFTrees for all EMPIAR entries listed in resources/all_empiar_entry_identifiers.json.
+    Skip entries that already have BFFTrees unless --force is used.
+    """
+    # Load the list of EMPIAR IDs
+    try:
+        with open("resources/all_empiar_entry_identifiers.json") as f:
+            empiar_ids: List[str] = json.load(f)
+    except FileNotFoundError:
+        print("[red]Error: resources/all_empiar_entry_identifiers.json not found[/red]")
+        raise typer.Exit(1)
+    
+    print(f"[yellow]Found {len(empiar_ids)} EMPIAR entries to process[/yellow]")
+    
+    # Process each EMPIAR ID
+    for empiar_id in empiar_ids:
+        output_path = Path(f"bfftrees/empiar/xz/{empiar_id}.pb.xz")
+        
+        # Skip if file exists and not forcing regeneration
+        if output_path.exists() and not force:
+            print(f"[blue]Skipping {empiar_id} - BFFTree already exists at {output_path}[/blue]")
+            continue
+        
+        print(f"[yellow]Processing {empiar_id}...[/yellow]")
+        try:
+            bfftree_for_empiar_entry(empiar_id)
+            print(f"[green]Successfully generated BFFTree for {empiar_id}[/green]")
+        except Exception as e:
+            print(f"[red]Error generating BFFTree for {empiar_id}: {e}[/red]")
+            continue
 
 if __name__ == "__main__":
     app() 
