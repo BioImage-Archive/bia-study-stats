@@ -583,5 +583,104 @@ def generate_all_empiar_bfftrees(
             print(f"[red]Error generating BFFTree for {empiar_id}: {e}[/red]")
             continue
 
+@app.command()
+def analyze_bfftrees(
+    directory: Path = typer.Argument(..., help="Directory containing .pb.xz BFFTree files"),
+    limit: Optional[int] = typer.Option(None, help="Limit analysis to first N files"),
+):
+    """
+    Analyze multiple BFFTree files in a directory and produce a summary of sizes and file types.
+    """
+    import lzma
+    from pathlib import Path
+    from .bettertree_pb2 import RadixTreeNode as ProtoNode
+    from .tree import RadixTreeNode
+    
+    # Find all .pb.xz files
+    tree_files = list(directory.glob("**/*.pb.xz"))
+    if limit:
+        tree_files = tree_files[:limit]
+    
+    if not tree_files:
+        print("[red]No .pb.xz files found in directory[/red]")
+        raise typer.Exit(1)
+    
+    print(f"[yellow]Analyzing {len(tree_files)} BFFTree files...[/yellow]")
+    
+    # Initialize counters
+    total_size = 0
+    total_files = 0
+    ext_sizes = {}
+    ext_counts = {}
+    
+    # Process each file
+    with typer.progressbar(tree_files) as progress:
+        for tree_file in progress:
+            try:
+                # Load the tree
+                proto_node = ProtoNode()
+                with lzma.open(tree_file, 'rb') as f:
+                    proto_node.ParseFromString(f.read())
+                tree = RadixTreeNode.load_from_proto_file_proto(proto_node)
+                
+                # Get paths and update statistics
+                paths = tree.get_all_paths()
+                total_files += len(paths)
+                
+                for path, size in paths:
+                    total_size += size
+                    ext = Path(path).suffix.lower()
+                    if not ext:
+                        ext = "(no extension)"
+                    ext_sizes[ext] = ext_sizes.get(ext, 0) + size
+                    ext_counts[ext] = ext_counts.get(ext, 0) + 1
+                    
+            except Exception as e:
+                print(f"[red]Error processing {tree_file}: {e}[/red]")
+                continue
+    
+    # Format size for human readability
+    def human_size(size_bytes):
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size_bytes < 1024.0:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024.0
+        return f"{size_bytes:.1f} PB"
+    
+    # Create summary table
+    console = Console()
+    console.print(f"\n[bold]Summary of {len(tree_files)} BFFTree files:[/bold]\n")
+    
+    summary_table = Table()
+    summary_table.add_column("Metric", style="cyan")
+    summary_table.add_column("Value", justify="right", style="green")
+    
+    summary_table.add_row("Total Files", f"{total_files:,}")
+    summary_table.add_row("Total Size", f"{human_size(total_size)} ({total_size:,} bytes)")
+    
+    console.print(summary_table)
+    
+    # Create extension breakdown table
+    if ext_sizes:
+        ext_table = Table(title="\nBreakdown by File Extension")
+        ext_table.add_column("Extension", style="cyan")
+        ext_table.add_column("Count", justify="right", style="green")
+        ext_table.add_column("Total Size", justify="right", style="green")
+        ext_table.add_column("% of Total", justify="right", style="magenta")
+        
+        # Add rows sorted by size
+        for ext, size in sorted(ext_sizes.items(), key=lambda x: x[1], reverse=True):
+            count = ext_counts[ext]
+            percentage = (size / total_size) * 100
+            ext_table.add_row(
+                ext,
+                f"{count:,}",
+                human_size(size),
+                f"{percentage:.1f}%"
+            )
+        
+        console.print("\n")
+        console.print(ext_table)
+
 if __name__ == "__main__":
     app() 
