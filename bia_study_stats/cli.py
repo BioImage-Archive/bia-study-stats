@@ -571,7 +571,13 @@ def generate_all_empiar_bfftrees(
         
         print(f"[yellow]Processing {empiar_id}...[/yellow]")
         try:
-            bfftree_for_empiar_entry(empiar_id=str(empiar_id))
+            # Create output directory if it doesn't exist
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            # Call with explicit output path to avoid creating it twice
+            bfftree_for_empiar_entry(
+                empiar_id=empiar_id,
+                output_path=output_path
+            )
             print(f"[green]Successfully generated BFFTree for {empiar_id}[/green]")
         except Exception as e:
             print(f"[red]Error generating BFFTree for {empiar_id}: {e}[/red]")
