@@ -476,5 +476,38 @@ def plot_cumulative_entries(
     plt.savefig('quarterly_cumulative_entries.png')
     print(f"Plot saved as quarterly_cumulative_entries.png")
 
+@app.command()
+def bfftree_from_s3_prefix(
+    prefix: str = typer.Argument(..., help="S3 prefix to process"),
+    output_path: Path = typer.Argument(..., help="Output path for the BFFTree (.pb or .pb.xz)"),
+    bucket: str = typer.Option("biostudies-public", help="S3 bucket name"),
+):
+    """
+    Create a BFFTree from an S3 prefix and save it as a protobuf file.
+    Supports optional compression if output path ends with .xz
+    """
+    from .s3_utils import S3Settings, s3_prefix_to_bfftree
+    
+    # Load settings
+    settings = S3Settings()
+    
+    try:
+        # Generate the tree
+        print(f"[yellow]Generating BFFTree from s3://{bucket}/{prefix}...[/yellow]")
+        tree = s3_prefix_to_bfftree(settings, bucket, prefix)
+        
+        # Save as compressed protobuf if output ends with .xz
+        if str(output_path).endswith('.xz'):
+            with lzma.open(output_path, 'wb') as f:
+                f.write(tree.to_proto().SerializeToString())
+        else:
+            tree.save_to_proto_file(output_path)
+            
+        print(f"[green]BFFTree saved to {output_path}[/green]")
+        
+    except Exception as e:
+        print(f"[red]Error generating BFFTree: {e}[/red]")
+        raise typer.Exit(1)
+
 if __name__ == "__main__":
     app() 
