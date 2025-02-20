@@ -30,14 +30,7 @@ def extract_ftp_link(accession_id: str) -> str:
             if link.get('href', '').startswith('ftp://'):
                 return link['href']
             
-        # Handle both S-BIAD and S-BSST accessions
-        if accession_id.startswith(('S-BIAD', 'S-BSST')):
-            # Extract the prefix (S-BIAD or S-BSST) and number
-            prefix, number = re.match(r'(S-B[A-Z]+)(\d+)', accession_id).groups()
-            subdirectory = number[-3:] # Last 3 digits
-            return f"ftp://ftp.ebi.ac.uk/biostudies/fire/{prefix}/{subdirectory}/{accession_id}"
-            
-        raise ValueError(f"Could not find FTP link for {accession_id}")
+        raise ValueError(f"Could not find FTP link for {accession_id} in webpage")
         
     except requests.RequestException as e:
         raise ValueError(f"Failed to access page for {accession_id}: {str(e)}")
