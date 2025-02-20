@@ -225,5 +225,42 @@ def calculate_sizes(
         typer.secho(f"Error: {e}", fg=typer.colors.RED)
         raise typer.Exit(1)
 
+@app.command()
+def test_prefix(
+    prefix: str = typer.Argument(..., help="S3 prefix to test"),
+    bucket: str = typer.Option("biostudies-public", help="S3 bucket name"),
+    cache_file: Path = typer.Option(
+        Path("s3_size_cache.json"),
+        "--cache-file",
+        "-c",
+        help="Cache file path"
+    ),
+    force_recalculate: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force recalculation ignoring cache"
+    )
+):
+    """
+    Test S3SizeCalculator with a single prefix.
+    """
+    try:
+        settings = Settings()
+        settings.s3_bucket = bucket  # Override bucket from command line
+        calculator = S3SizeCalculator(settings, cache_file)
+        
+        typer.secho(f"Testing prefix: {prefix}", fg=typer.colors.BLUE)
+        size = calculator.calculate_prefix_size(prefix, force_recalculate)
+        
+        if size >= 0:
+            typer.secho(f"Size: {size:,} bytes", fg=typer.colors.GREEN)
+        else:
+            typer.secho("Error calculating size", fg=typer.colors.RED)
+            
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED)
+        raise typer.Exit(1)
+
 if __name__ == '__main__':
     app()
