@@ -103,12 +103,14 @@ def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str, strip_p
         while prefixes_to_process:
             current_prefix = prefixes_to_process.pop(0)
             # URL encode the prefix to handle spaces and special characters
-            encoded_prefix = '/'.join(quote(part, safe=' ') for part in current_prefix.split('/'))
+            # encoded_prefix = '/'.join(quote(part, safe=' ') for part in current_prefix.split('/'))
             paginator = s3_client.get_paginator('list_objects_v2')
             
-            for page in paginator.paginate(Bucket=bucket, Prefix=encoded_prefix, Delimiter='/'):
+            for page in paginator.paginate(Bucket=bucket, Prefix=current_prefix, Delimiter='/'):
                 # Process objects at current level
                 if 'Contents' in page:
+                    # print([obj['Key'] for obj in page['Contents']])
+
                     for obj in page['Contents']:
                         path = obj['Key']
                         if strip_prefix and path.startswith(prefix):
