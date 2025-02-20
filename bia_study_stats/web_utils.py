@@ -30,8 +30,6 @@ def extract_ftp_link(accession_id: str) -> str:
             if link.get('href', '').startswith('ftp://'):
                 return link['href']
             
-        # Alternative: construct the FTP URL from the accession
-        # Format: ftp://ftp.ebi.ac.uk/biostudies/fire/S-BIAD/657/S-BIAD1657
         if accession_id.startswith('S-BIAD'):
             number = re.search(r'S-BIAD(\d+)', accession_id).group(1)
             subdirectory = number[-3:] # Last 3 digits
