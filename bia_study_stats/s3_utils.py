@@ -50,8 +50,8 @@ def calculate_prefix_size(settings: S3Settings, bucket: str, prefix: str) -> int
         
         while prefixes_to_process:
             current_prefix = prefixes_to_process.pop(0)
-            # URL encode the prefix to handle spaces and special characters
-            encoded_prefix = quote(current_prefix, safe='')
+            # URL encode each part of the prefix separately, keeping slashes intact
+            encoded_prefix = '/'.join(quote(part, safe='') for part in current_prefix.split('/'))
             paginator = s3_client.get_paginator('list_objects_v2')
             
             for page in paginator.paginate(Bucket=bucket, Prefix=encoded_prefix, Delimiter='/'):
@@ -102,8 +102,8 @@ def s3_prefix_to_bfftree(settings: S3Settings, bucket: str, prefix: str, strip_p
     try:
         while prefixes_to_process:
             current_prefix = prefixes_to_process.pop(0)
-            # URL encode the prefix to handle spaces and special characters
-            encoded_prefix = quote(current_prefix, safe='')
+            # URL encode each part of the prefix separately, keeping slashes intact
+            encoded_prefix = '/'.join(quote(part, safe='') for part in current_prefix.split('/'))
             paginator = s3_client.get_paginator('list_objects_v2')
             
             for page in paginator.paginate(Bucket=bucket, Prefix=encoded_prefix, Delimiter='/'):
