@@ -2,6 +2,7 @@ import json
 import lzma
 from pathlib import Path
 from typing import Optional, List
+from urllib.parse import quote
 
 import typer
 from rich import print
@@ -506,7 +507,10 @@ def bfftree_for_biostudies_entry(
         path_parts = ftp_link.split('/fire/')[-1].split('/')
         prefix = f"{'/'.join(path_parts)}/Files"
         
-        # Call bfftree_from_s3_prefix with constructed prefix
+        # URL encode each part of the prefix separately, keeping slashes intact
+        encoded_prefix = '/'.join(quote(part, safe=' ') for part in prefix.split('/'))
+        
+        # Call bfftree_from_s3_prefix with encoded prefix
         bfftree_from_s3_prefix(
             prefix=prefix,
             output_path=output_path,
