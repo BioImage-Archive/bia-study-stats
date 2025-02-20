@@ -723,6 +723,65 @@ def analyze_bfftrees(
         console.print(ext_table)
 
 @app.command()
+def yearly_stats(
+    stats_file: Path = typer.Argument(
+        ...,
+        help="Path to the JSON file containing BIA study statistics",
+        exists=True,
+    ),
+):
+    """Summarize cumulative number of studies and total data volume for each year 2019-2024."""
+    import pandas as pd
+    
+    # Load study stats
+    studies = load_study_stats(stats_file)
+    
+    # Create DataFrame with release dates and sizes
+    df = pd.DataFrame([
+        {
+            'release_date': pd.Timestamp(study.release_date),
+            'size_bytes': study.total_size_bytes,
+            'count': 1  # Each study counts as 1
+        }
+        for study in studies.values()
+    ])
+    
+    # Filter for dates since 2019
+    df = df[df['release_date'] >= pd.Timestamp('2019-01-01')]
+    
+    # Create table
+    table = Table(title="BIA Yearly Statistics (Cumulative)")
+    table.add_column("Year", style="cyan")
+    table.add_column("Total Studies", justify="right", style="green")
+    table.add_column("Total Data", justify="right", style="green")
+    
+    # Calculate cumulative stats for each year
+    for year in range(2019, 2025):
+        year_end = pd.Timestamp(f"{year}-12-31")
+        year_data = df[df['release_date'] <= year_end]
+        
+        total_studies = len(year_data)
+        total_bytes = year_data['size_bytes'].sum()
+        
+        # Convert bytes to more readable format
+        if total_bytes >= 1024**4:  # TB
+            size_str = f"{total_bytes/1024**4:.1f} TB"
+        elif total_bytes >= 1024**3:  # GB
+            size_str = f"{total_bytes/1024**3:.1f} GB"
+        else:
+            size_str = f"{total_bytes:,} bytes"
+        
+        table.add_row(
+            str(year),
+            f"{total_studies:,}",
+            size_str
+        )
+    
+    # Print the table
+    console = Console()
+    console.print(table)
+
+@app.command()
 def generate_all_biostudies_bfftrees(
     force: bool = typer.Option(False, help="Force regeneration of existing BFFTrees")
 ):
